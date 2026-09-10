@@ -44,6 +44,17 @@ app.include_router(transport.router)
 app.include_router(events_announcements.router)
 app.include_router(settings.router)
 
+@app.on_event("startup")
+def on_startup():
+    try:
+        from app.database import engine, Base
+        from app.services.seed import seed_database
+        Base.metadata.create_all(bind=engine)
+        seed_database()
+        print("Database initialized and seeded successfully.")
+    except Exception as e:
+        print(f"Startup DB init info: {e}")
+
 @app.get("/")
 def root():
     return {

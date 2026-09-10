@@ -285,7 +285,7 @@ const Results = () => {
                     </div>
                     <div>
                       <h2 className="text-2xl font-black tracking-tight text-white print:text-black uppercase">
-                        Army Public School and College Islamabad
+                        School Management System
                       </h2>
                       <p className="text-xs text-slate-400 print:text-slate-600">
                         Excellence in Academic Mastery & Moral Leadership • Est. 1998

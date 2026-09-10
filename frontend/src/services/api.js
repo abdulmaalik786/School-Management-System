@@ -19,7 +19,7 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: handle 401 Unauthorized
+// Response interceptor: handle 401 Unauthorized & offline demo fallback
 API.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -29,6 +29,11 @@ API.interceptors.response.use(
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
+    }
+    const isNetworkErr = error.message?.includes('Network Error') || error.message?.includes('Failed to fetch') || !error.response;
+    if (isNetworkErr && localStorage.getItem('school_erp_token') === 'offline_demo_token') {
+      // Mock basic arrays for offline testing
+      return Promise.resolve({ data: [] });
     }
     return Promise.reject(error);
   }

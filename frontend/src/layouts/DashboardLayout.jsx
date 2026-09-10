@@ -54,8 +54,8 @@ const allNavigationItems = [
   { name: 'Results & Cards', path: '/results', icon: Award, roles: ['All'] },
   { name: 'Fee Management', path: '/fees', icon: Receipt, roles: ['Super Admin', 'School Admin', 'Principal', 'Accountant', 'Student', 'Parent'] },
   { name: 'Assignments', path: '/assignments', icon: BookMarked, roles: ['Super Admin', 'School Admin', 'Principal', 'Teacher', 'Student'] },
-  { name: 'Library', path: '/library', icon: Library, roles: ['Super Admin', 'School Admin', 'Principal', 'Librarian', 'Teacher', 'Student'] },
-  { name: 'Transport', path: '/transport', icon: Bus, roles: ['Super Admin', 'School Admin', 'Principal', 'Accountant', 'Student', 'Parent'] },
+  { name: 'Library', path: '/library', icon: Library, roles: ['Super Admin', 'School Admin', 'Principal', 'Librarian', 'Teacher'] },
+  { name: 'Transport', path: '/transport', icon: Bus, roles: ['Super Admin', 'School Admin', 'Principal', 'Accountant', 'Parent'] },
   { name: 'School Calendar', path: '/calendar', icon: Calendar, roles: ['All'] },
   { name: 'Announcements', path: '/announcements', icon: Megaphone, roles: ['All'] },
   { name: 'Reports Hub', path: '/reports', icon: TrendingUp, roles: ['Super Admin', 'School Admin', 'Principal', 'Accountant', 'Teacher'] },
@@ -175,10 +175,10 @@ const DashboardLayout = () => {
             {!collapsed && (
               <div>
                 <h1 className="font-extrabold text-slate-100 text-sm leading-tight tracking-tight">
-                  Army Public <span className="text-indigo-400">School & College Islamabad</span>
+                  School <span className="text-indigo-400">Management System</span>
                 </h1>
                 <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block">
-                  APS&C Islamabad ERP v1.0
+                  SMS ERP v1.0
                 </span>
               </div>
             )}

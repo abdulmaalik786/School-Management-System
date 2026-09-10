@@ -30,7 +30,7 @@ const Timetable = () => {
   const isTeacher = user?.role?.name === 'Teacher';
 
   // Navigation Subtabs: 'class' | 'teacher' | 'room' | 'manage'
-  const [activeTab, setActiveTab] = useState(isTeacher ? 'teacher' : 'class');
+  const [activeTab, setActiveTab] = useState('class');
 
   // Master Data
   const [academicYears, setAcademicYears] = useState([]);
@@ -347,17 +347,7 @@ const Timetable = () => {
           <span>Class Timetable</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('teacher')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
-            activeTab === 'teacher'
-              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-          }`}
-        >
-          <GraduationCap size={16} />
-          <span>Teacher Timetable</span>
-        </button>
+        {/* Teacher Timetable Tab removed for Student / general view as requested */}
 
         <button
           onClick={() => setActiveTab('room')}

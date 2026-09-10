@@ -97,10 +97,10 @@ const Dashboard = () => {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Welcome back, {user?.full_name || user?.username}!
+              Welcome to {userRole} Portal
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-              Army Public School & College Islamabad ERP • Real-time academic tracking, live attendance roll call, automated grading, and financial operations.
+              School Management System ERP • Real-time academic tracking, live attendance roll call, automated grading, and financial operations.
             </p>
           </div>
 

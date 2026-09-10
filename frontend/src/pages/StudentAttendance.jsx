@@ -15,6 +15,8 @@ import {
   History,
   AlertCircle,
   Users,
+  UserPlus,
+  UserMinus,
   Edit2,
   Trash2,
   ChevronRight,
@@ -99,7 +101,60 @@ const StudentAttendance = () => {
   const [editRemarks, setEditRemarks] = useState('');
   const [editSaving, setEditSaving] = useState(false);
 
-  // Initial Load
+  // Add/Remove Student Modal State
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentRoll, setNewStudentRoll] = useState('');
+  const [newStudentAdm, setNewStudentAdm] = useState('');
+  const [addStudentSubmitting, setAddStudentSubmitting] = useState(false);
+
+  const handleQuickAddStudent = async (e) => {
+    e.preventDefault();
+    if (!newStudentName || !selectedClass || !selectedSection) return;
+    setAddStudentSubmitting(true);
+    try {
+      const nameParts = newStudentName.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || 'Student';
+      const payload = {
+        first_name: firstName,
+        last_name: lastName,
+        roll_number: newStudentRoll || `${Math.floor(100 + Math.random() * 900)}`,
+        admission_number: newStudentAdm || `ADM-${Date.now().toString().slice(-6)}`,
+        class_id: parseInt(selectedClass),
+        section_id: parseInt(selectedSection),
+        status: 'Active'
+      };
+      await API.post('/api/students', payload);
+      setSuccessMsg('New student added to attendance sheet successfully!');
+      setShowAddStudentModal(false);
+      setNewStudentName('');
+      setNewStudentRoll('');
+      setNewStudentAdm('');
+      loadStudentsAndAttendance();
+      setTimeout(() => setSuccessMsg(''), 3500);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to add student');
+    } finally {
+      setAddStudentSubmitting(false);
+    }
+  };
+
+  const handleRemoveStudent = async (studentId, studentName) => {
+    if (!window.confirm(`Are you sure you want to remove ${studentName} (e.g. Left School / Deactivated)?`)) {
+      return;
+    }
+    try {
+      await API.delete(`/api/students/${studentId}`);
+      setSuccessMsg(`${studentName} removed from roster.`);
+      loadStudentsAndAttendance();
+      setTimeout(() => setSuccessMsg(''), 3500);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to remove student');
+    }
+  };
+
+  // Initial Load & Section setup
   useEffect(() => {
     const fetchMasters = async () => {
       try {
@@ -109,15 +164,39 @@ const StudentAttendance = () => {
           API.get('/api/subjects'),
           API.get('/api/periods')
         ]);
-        setClasses(clsRes.data);
-        setSections(secRes.data);
+        let allSections = secRes.data;
+        let allClasses = clsRes.data;
+
+        // Auto-create missing sections A & B for classes if needed
+        for (const cls of allClasses) {
+          const clsSecs = allSections.filter(s => s.class_id === cls.id);
+          if (clsSecs.length < 2) {
+            const hasA = clsSecs.some(s => s.name === 'A');
+            const hasB = clsSecs.some(s => s.name === 'B');
+            if (!hasA) {
+              try {
+                const resA = await API.post('/api/sections', { name: 'A', class_id: cls.id });
+                allSections.push(resA.data);
+              } catch (e) {}
+            }
+            if (!hasB) {
+              try {
+                const resB = await API.post('/api/sections', { name: 'B', class_id: cls.id });
+                allSections.push(resB.data);
+              } catch (e) {}
+            }
+          }
+        }
+
+        setClasses(allClasses);
+        setSections(allSections);
         setSubjects(subjRes.data);
         setPeriods(perRes.data);
 
-        if (clsRes.data.length > 0) {
-          const firstClsId = clsRes.data[0].id;
+        if (allClasses.length > 0) {
+          const firstClsId = allClasses[0].id;
           setSelectedClass(firstClsId.toString());
-          const matchingSecs = secRes.data.filter(s => s.class_id === firstClsId);
+          const matchingSecs = allSections.filter(s => s.class_id === firstClsId);
           if (matchingSecs.length > 0) {
             setSelectedSection(matchingSecs[0].id.toString());
           }
@@ -410,7 +489,7 @@ const StudentAttendance = () => {
         <div className="space-y-5">
           {/* Selectors Bar */}
           <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Class */}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Class</label>
@@ -452,36 +531,6 @@ const StudentAttendance = () => {
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl glass-input text-slate-100 focus:outline-none"
                 />
-              </div>
-
-              {/* Subject (Optional) */}
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Subject (Optional)</label>
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl glass-input text-slate-100 focus:outline-none"
-                >
-                  <option value="" className="bg-slate-900">-- General Daily Roll Call --</option>
-                  {subjects.map(sub => (
-                    <option key={sub.id} value={sub.id} className="bg-slate-900">{sub.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Period (Optional) */}
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Period (Optional)</label>
-                <select
-                  value={selectedPeriod}
-                  onChange={(e) => setSelectedPeriod(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl glass-input text-slate-100 focus:outline-none"
-                >
-                  <option value="" className="bg-slate-900">-- All Day / Full Session --</option>
-                  {periods.filter(p => !p.is_break).map(p => (
-                    <option key={p.id} value={p.id} className="bg-slate-900">{p.name}</option>
-                  ))}
-                </select>
               </div>
             </div>
 
@@ -557,8 +606,18 @@ const StudentAttendance = () => {
                   Student Roll Call Roster ({students.length} Enrolled)
                 </h3>
               </div>
-              <div className="text-xs text-slate-400">
-                Date: <span className="font-mono text-slate-200">{selectedDate}</span>
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddStudentModal(true)}
+                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-lg shadow-teal-600/30 transition"
+                >
+                  <UserPlus size={15} />
+                  <span>+ Add Student</span>
+                </button>
+                <div className="text-xs text-slate-400">
+                  Date: <span className="font-mono text-slate-200">{selectedDate}</span>
+                </div>
               </div>
             </div>
 
@@ -570,7 +629,15 @@ const StudentAttendance = () => {
                   <Users size={24} />
                 </div>
                 <p className="text-sm font-medium text-slate-300">No students enrolled in this section</p>
-                <p className="text-xs text-slate-500">Add students to this class and section to begin tracking attendance.</p>
+                <p className="text-xs text-slate-500 mb-3">Add students to this class and section to begin tracking attendance.</p>
+                <button
+                  type="button"
+                  onClick={() => setShowAddStudentModal(true)}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-lg shadow-teal-600/30 transition"
+                >
+                  <UserPlus size={16} />
+                  <span>+ Add New Student</span>
+                </button>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -581,6 +648,7 @@ const StudentAttendance = () => {
                       <th className="py-3.5 px-4">Student Details</th>
                       <th className="py-3.5 px-4 text-center">Attendance Status</th>
                       <th className="py-3.5 px-4">Remarks (Optional)</th>
+                      <th className="py-3.5 px-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
@@ -598,7 +666,7 @@ const StudentAttendance = () => {
                           {/* Student Info */}
                           <td className="py-3.5 px-4">
                             <div className="font-bold text-slate-100 text-sm">
-                              {student.user?.full_name || `${student.first_name} ${student.last_name}`}
+                              {student.user?.full_name || `${student.first_name || ''} ${student.last_name || ''}`}
                             </div>
                             <div className="text-[11px] text-slate-400 font-mono">
                               Adm: {student.admission_number}
@@ -641,6 +709,18 @@ const StudentAttendance = () => {
                               onChange={(e) => handleSetStudentRemarks(student.id, e.target.value)}
                               className="w-full px-3 py-1.5 text-xs rounded-xl glass-input text-slate-200 placeholder-slate-500 focus:outline-none"
                             />
+                          </td>
+
+                          {/* Action - Remove Student */}
+                          <td className="py-3.5 px-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveStudent(student.id, student.user?.full_name || `${student.first_name || ''} ${student.last_name || ''}`)}
+                              className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition"
+                              title="Remove Student (Left School / Deactivate)"
+                            >
+                              <Trash2 size={15} />
+                            </button>
                           </td>
                         </tr>
                       );
@@ -905,6 +985,84 @@ const StudentAttendance = () => {
                   className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-lg shadow-teal-600/30 transition disabled:opacity-50"
                 >
                   {editSaving ? 'Saving...' : 'Update Record'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK ADD STUDENT MODAL */}
+      {showAddStudentModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="glass-card max-w-md w-full p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <UserPlus size={18} className="text-teal-400" />
+                <h3 className="text-sm font-bold text-slate-100">Add Student to Attendance Roster</h3>
+              </div>
+              <button
+                onClick={() => setShowAddStudentModal(false)}
+                className="text-slate-400 hover:text-slate-200"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickAddStudent} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Student Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ali Ahmed"
+                  value={newStudentName}
+                  onChange={(e) => setNewStudentName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl glass-input text-slate-100 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Roll Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 101"
+                    value={newStudentRoll}
+                    onChange={(e) => setNewStudentRoll(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl glass-input text-slate-100 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Admission No</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ADM-2026-009"
+                    value={newStudentAdm}
+                    onChange={(e) => setNewStudentAdm(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl glass-input text-slate-100 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-[11px] text-slate-400">
+                Student will be enrolled directly into <span className="font-bold text-slate-200">Class {classes.find(c=>c.id==selectedClass)?.name || ''}</span>, <span className="font-bold text-slate-200">Section {sections.find(s=>s.id==selectedSection)?.name || ''}</span>.
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddStudentModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addStudentSubmitting}
+                  className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-lg shadow-teal-600/30 transition disabled:opacity-50"
+                >
+                  {addStudentSubmitting ? 'Adding...' : 'Add to Sheet'}
                 </button>
               </div>
             </form>

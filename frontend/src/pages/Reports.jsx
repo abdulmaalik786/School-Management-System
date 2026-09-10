@@ -268,7 +268,7 @@ const Reports = () => {
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-xl print:border-none print:bg-white print:text-black">
         {/* Printable Header */}
         <div className="hidden print:block p-6 border-b text-center">
-          <h2 className="text-2xl font-black uppercase">Army Public School and College Islamabad</h2>
+          <h2 className="text-2xl font-black uppercase">School Management System</h2>
           <p className="text-xs text-gray-600">Institutional Report: {activeReport.toUpperCase()} • Generated on {new Date().toLocaleString()}</p>
         </div>
 

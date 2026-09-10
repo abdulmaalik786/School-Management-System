@@ -1228,7 +1228,7 @@ const FeeManagement = () => {
             {/* Official Receipt Template */}
             <div className="border border-slate-700 print:border-black rounded-xl p-6 bg-slate-950/80 print:bg-white text-xs">
               <div className="text-center border-b border-slate-700 print:border-black pb-4 mb-4">
-                <h2 className="text-lg font-bold text-white print:text-black uppercase">Army Public School and College Islamabad</h2>
+                <h2 className="text-lg font-bold text-white print:text-black uppercase">School Management System</h2>
                 <p className="text-[11px] text-slate-400 print:text-slate-600">Official Student Fee Payment Receipt</p>
               </div>
 

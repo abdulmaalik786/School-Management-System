@@ -128,11 +128,16 @@ def seed_database():
 
         # Seed Classes
         classes_data = [
-            {"name": "Grade 1", "numeric_grade": 1, "description": "Primary Grade 1"},
-            {"name": "Grade 2", "numeric_grade": 2, "description": "Primary Grade 2"},
-            {"name": "Grade 3", "numeric_grade": 3, "description": "Primary Grade 3"},
-            {"name": "Grade 4", "numeric_grade": 4, "description": "Primary Grade 4"},
-            {"name": "Grade 5", "numeric_grade": 5, "description": "Primary Grade 5"},
+            {"name": "Grade 1", "numeric_grade": 1, "description": "Class 1"},
+            {"name": "Grade 2", "numeric_grade": 2, "description": "Class 2"},
+            {"name": "Grade 3", "numeric_grade": 3, "description": "Class 3"},
+            {"name": "Grade 4", "numeric_grade": 4, "description": "Class 4"},
+            {"name": "Grade 5", "numeric_grade": 5, "description": "Class 5"},
+            {"name": "Grade 6", "numeric_grade": 6, "description": "Class 6"},
+            {"name": "Grade 7", "numeric_grade": 7, "description": "Class 7"},
+            {"name": "Grade 8", "numeric_grade": 8, "description": "Class 8"},
+            {"name": "Grade 9", "numeric_grade": 9, "description": "Class 9"},
+            {"name": "Grade 10", "numeric_grade": 10, "description": "Class 10"},
         ]
         class_map = {}
         for c_data in classes_data:
@@ -168,6 +173,13 @@ def seed_database():
                 db.add(user)
                 db.flush()
                 print(f"Created user: {user.username} ({user.role.name})")
+            else:
+                user.full_name = u_data["full_name"]
+                user.email = u_data["email"]
+                user.phone = u_data["phone"]
+                user.role_id = role.id
+                db.flush()
+                print(f"Updated user name: {user.username} -> {user.full_name}")
 
             # Profiles
             if u_data["role_name"] == "Parent":
@@ -257,28 +269,23 @@ def seed_database():
 
         db.commit()
 
-        # Seed Sections for Grade 1
-        g1 = class_map.get("Grade 1")
-        if g1:
-            sec_a = db.query(Section).filter(Section.class_id == g1.id, Section.name == "A").first()
-            if not sec_a:
-                sec_a = Section(
-                    name="A",
-                    class_id=g1.id,
-                    class_teacher_id=teacher_record.id if teacher_record else None
-                )
-                db.add(sec_a)
-                db.flush()
-                print(f"Created Section Grade 1-A (Class Teacher: {teacher_record.user.full_name if teacher_record else 'None'})")
-            
-            sec_b = db.query(Section).filter(Section.class_id == g1.id, Section.name == "B").first()
-            if not sec_b:
-                sec_b = Section(name="B", class_id=g1.id)
-                db.add(sec_b)
-                print("Created Section Grade 1-B")
+        # Seed Sections A and B for ALL classes (Grade 1 to 10)
+        for c_name, cls_obj in class_map.items():
+            for sec_name in ["A", "B"]:
+                existing_sec = db.query(Section).filter(Section.class_id == cls_obj.id, Section.name == sec_name).first()
+                if not existing_sec:
+                    sec_item = Section(name=sec_name, class_id=cls_obj.id)
+                    db.add(sec_item)
+                    print(f"Created Section {c_name}-{sec_name}")
 
-            if student_record and not student_record.section_id:
-                student_record.section_id = sec_a.id
+        db.commit()
+
+        # Assign student record section if needed
+        g1 = class_map.get("Grade 1")
+        if g1 and student_record and not student_record.section_id:
+            g1_sec_a = db.query(Section).filter(Section.class_id == g1.id, Section.name == "A").first()
+            if g1_sec_a:
+                student_record.section_id = g1_sec_a.id
                 db.commit()
 
         # Seed Subjects

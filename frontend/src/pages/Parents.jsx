@@ -64,21 +64,21 @@ const Parents = () => {
   };
 
   useEffect(() => {
+    setPage(1);
     fetchParents();
   }, [search]);
 
   const handleOpenAdd = () => {
-    const randomNum = Math.floor(100 + Math.random() * 900);
     setFormData({
       first_name: '',
       last_name: '',
-      email: `parent_${randomNum}@school.com`,
-      username: `parent_${randomNum}`,
+      email: '',
+      username: '',
       password: 'password123',
-      phone: '+1 555-0177',
-      occupation: 'Architect',
+      phone: '',
+      occupation: '',
       relationship_type: 'Father',
-      address: '789 Guardian Avenue'
+      address: ''
     });
     setEditParent(null);
     setFormError('');
@@ -96,6 +96,7 @@ const Parents = () => {
       last_name: lastName,
       email: p.email,
       username: p.username,
+      password: '',
       phone: p.phone || '',
       occupation: p.occupation || '',
       relationship_type: p.relationship_type || 'Father',
@@ -112,7 +113,8 @@ const Parents = () => {
 
     try {
       if (editParent) {
-        await API.put(`/api/parents/${editParent.id}`, formData);
+        const { username, password, ...updatePayload } = formData;
+        await API.put(`/api/parents/${editParent.id}`, updatePayload);
         setSuccessMsg('Parent record updated successfully!');
       } else {
         await API.post('/api/parents', formData);
@@ -245,7 +247,7 @@ const Parents = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-1">
                         <Baby size={14} className="text-rose-400" />
-                        <span className="font-bold text-slate-100">{p.children_count} Students</span>
+                        <span className="font-bold text-slate-100">{p.children_count || 0} Students</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
@@ -288,14 +290,14 @@ const Parents = () => {
           <div className="flex items-center space-x-2">
             <button
               disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
+              onClick={() => setPage(p => Math.max(p - 1, 1))}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 transition"
             >
               <ChevronLeft size={16} />
             </button>
             <button
-              disabled={page === totalPages}
-              onClick={() => setPage(p => p + 1)}
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => Math.min(p + 1, totalPages))}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 transition"
             >
               <ChevronRight size={16} />
@@ -367,12 +369,28 @@ const Parents = () => {
                   <input
                     type="text"
                     required
+                    disabled={!!editParent}
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl glass-input text-slate-100 focus:outline-none"
+                    className={`w-full px-3 py-2 rounded-xl glass-input text-slate-100 focus:outline-none ${editParent ? 'opacity-50 cursor-not-allowed bg-slate-900/50' : ''
+                      }`}
                   />
                 </div>
               </div>
+
+              {!editParent && (
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Default Password *</label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl glass-input text-slate-100 focus:outline-none"
+                    placeholder="password123"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -394,6 +412,7 @@ const Parents = () => {
                     value={formData.occupation}
                     onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl glass-input text-slate-100 focus:outline-none"
+                    placeholder="e.g. Software Engineer"
                   />
                 </div>
                 <div>
@@ -403,6 +422,7 @@ const Parents = () => {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl glass-input text-slate-100 focus:outline-none"
+                    placeholder="e.g. +1 555-0199"
                   />
                 </div>
               </div>
@@ -414,6 +434,7 @@ const Parents = () => {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl glass-input text-slate-100 focus:outline-none"
+                  placeholder="Enter full address"
                 ></textarea>
               </div>
 
@@ -451,10 +472,10 @@ const Parents = () => {
 
             <div className="text-center pb-4 border-b border-slate-800">
               <div className="w-16 h-16 rounded-2xl bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center font-bold text-2xl mx-auto mb-3">
-                {viewParent.full_name.charAt(0)}
+                {viewParent.full_name ? viewParent.full_name.charAt(0) : 'P'}
               </div>
               <h3 className="text-lg font-bold text-slate-100">{viewParent.full_name}</h3>
-              <p className="text-xs text-rose-400 font-medium">{viewParent.relationship_type || 'Guardian'} • {viewParent.occupation}</p>
+              <p className="text-xs text-rose-400 font-medium">{viewParent.relationship_type || 'Guardian'} • {viewParent.occupation || 'N/A'}</p>
             </div>
 
             <div className="py-4 space-y-2.5 text-xs">
@@ -475,7 +496,7 @@ const Parents = () => {
             {/* Children List */}
             <div className="mt-2 pt-3 border-t border-slate-800">
               <h4 className="text-xs font-bold text-slate-300 mb-2 uppercase tracking-wider">Enrolled Children</h4>
-              {viewParent.children.length === 0 ? (
+              {(!viewParent.children || viewParent.children.length === 0) ? (
                 <p className="text-xs text-slate-500 italic">No linked students found.</p>
               ) : (
                 <div className="space-y-2">
