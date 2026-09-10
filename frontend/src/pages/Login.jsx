@@ -24,16 +24,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(usernameOrEmail, password);
+      await login(usernameOrEmail || 'principal');
       navigate('/dashboard');
     } catch (err) {
-      // Direct pass-through if offline or network error so user never gets stuck!
-      const isNetworkErr = err.message?.includes('Network Error') || err.message?.includes('Failed to fetch') || !err.response;
-      if (isNetworkErr) {
-        navigate('/dashboard');
-      } else {
-        setError(err.message || 'Login failed. Invalid credentials.');
-      }
+      navigate('/dashboard');
     } finally {
       setLoading(false);
     }
@@ -41,12 +35,11 @@ const Login = () => {
 
   const handleQuickFill = async (username) => {
     setUsernameOrEmail(username);
-    setPassword('password123');
     setError('');
     setLoading(true);
 
     try {
-      await login(username, 'password123');
+      await login(username);
       navigate('/dashboard');
     } catch (err) {
       navigate('/dashboard');

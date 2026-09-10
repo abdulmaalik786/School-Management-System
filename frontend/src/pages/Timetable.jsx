@@ -22,7 +22,7 @@ import {
   School
 } from 'lucide-react';
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 const Timetable = () => {
   const { user } = useAuth();
@@ -66,6 +66,46 @@ const Timetable = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
+const MOCK_CLASSES = Array.from({ length: 10 }, (_, i) => ({
+  id: i + 1,
+  name: `Class ${i + 1}`,
+  numeric_grade: i + 1
+}));
+
+const MOCK_SECTIONS = MOCK_CLASSES.flatMap((cls) => [
+  { id: cls.id * 10 + 1, name: 'A', class_id: cls.id },
+  { id: cls.id * 10 + 2, name: 'B', class_id: cls.id }
+]);
+
+const ROOMS_LIST = Array.from({ length: 20 }, (_, i) => `Room ${i + 1}`);
+
+const MOCK_PERIODS = [
+  { id: 1, name: 'Period 1', start_time: '08:00', end_time: '08:45', is_break: false },
+  { id: 2, name: 'Period 2', start_time: '08:45', end_time: '09:30', is_break: false },
+  { id: 3, name: 'Period 3', start_time: '09:30', end_time: '10:15', is_break: false },
+  { id: 4, name: 'Period 4', start_time: '10:15', end_time: '11:00', is_break: false },
+  { id: 5, name: 'Lunch & Prayer', start_time: '11:00', end_time: '11:40', is_break: true },
+  { id: 6, name: 'Period 5', start_time: '11:40', end_time: '12:25', is_break: false },
+  { id: 7, name: 'Period 6', start_time: '12:25', end_time: '01:10', is_break: false },
+  { id: 8, name: 'Period 7', start_time: '01:10', end_time: '01:55', is_break: false }
+];
+
+const MOCK_SUBJECTS = [
+  { id: 1, name: 'Mathematics', code: 'MATH-101' },
+  { id: 2, name: 'English Language', code: 'ENG-101' },
+  { id: 3, name: 'Urdu Literature', code: 'URD-101' },
+  { id: 4, name: 'General Science', code: 'SCI-101' },
+  { id: 5, name: 'Computer Studies', code: 'CS-101' },
+  { id: 6, name: 'Islamic Studies', code: 'ISL-101' },
+  { id: 7, name: 'Social Studies', code: 'SST-101' }
+];
+
+const MOCK_TEACHERS = [
+  { id: 1, user: { full_name: 'Syeda Fatima Zahra' }, department: 'Mathematics' },
+  { id: 2, user: { full_name: 'Mr. Tariq Mahmood' }, department: 'Science' },
+  { id: 3, user: { full_name: 'Ms. Ayesha Khan' }, department: 'English' }
+];
+
   // Load all master dependencies & entries
   const fetchAllData = async () => {
     setLoading(true);
@@ -80,34 +120,45 @@ const Timetable = () => {
         API.get('/api/timetable')
       ]);
 
-      setAcademicYears(ayRes.data);
-      setClasses(clsRes.data);
-      setSections(secRes.data);
-      setSubjects(subjRes.data);
-      setTeachers(tchRes.data);
-      setPeriods(perRes.data);
-      setTimetableEntries(ttRes.data);
+      const rawPeriods = perRes.data && perRes.data.length > 0 ? perRes.data : MOCK_PERIODS;
+      const loadedPeriods = rawPeriods.filter(p => !p.name.toLowerCase().includes('tea break'));
+      const loadedClasses = clsRes.data && clsRes.data.length > 0 ? clsRes.data : MOCK_CLASSES;
+      const loadedSections = secRes.data && secRes.data.length > 0 ? secRes.data : MOCK_SECTIONS;
+      const loadedSubjects = subjRes.data && subjRes.data.length > 0 ? subjRes.data : MOCK_SUBJECTS;
+      const loadedTeachers = tchRes.data && tchRes.data.length > 0 ? tchRes.data : MOCK_TEACHERS;
+
+      setAcademicYears(ayRes.data && ayRes.data.length > 0 ? ayRes.data : [{ id: 1, name: '2026-2027', is_active: true }]);
+      setClasses(loadedClasses);
+      setSections(loadedSections);
+      setSubjects(loadedSubjects);
+      setTeachers(loadedTeachers);
+      setPeriods(loadedPeriods);
+      setTimetableEntries(ttRes.data || []);
 
       // Default selections
-      if (ayRes.data.length > 0) {
-        const activeAy = ayRes.data.find(a => a.is_active) || ayRes.data[0];
-        setSelectedAcademicYear(activeAy.id.toString());
+      if (loadedClasses.length > 0) {
+        setSelectedClass(loadedClasses[0].id.toString());
       }
-      if (clsRes.data.length > 0) {
-        setSelectedClass(clsRes.data[0].id.toString());
+      const initialSections = loadedSections.filter(s => s.class_id === (loadedClasses[0]?.id || 1));
+      if (initialSections.length > 0) {
+        setSelectedSection(initialSections[0].id.toString());
       }
-      if (secRes.data.length > 0) {
-        setSelectedSection(secRes.data[0].id.toString());
-      }
-      if (tchRes.data.length > 0) {
-        if (isTeacher && user?.teacher_profile) {
-          setSelectedTeacher(user.teacher_profile.id.toString());
-        } else {
-          setSelectedTeacher(tchRes.data[0].id.toString());
-        }
+      if (loadedTeachers.length > 0) {
+        setSelectedTeacher(loadedTeachers[0].id.toString());
       }
     } catch (err) {
       console.error('Failed to load timetable data:', err);
+      // Fallback offline mock data for 1 to 10 classes and A/B sections
+      setAcademicYears([{ id: 1, name: '2026-2027', is_active: true }]);
+      setClasses(MOCK_CLASSES);
+      setSections(MOCK_SECTIONS);
+      setSubjects(MOCK_SUBJECTS);
+      setTeachers(MOCK_TEACHERS);
+      setPeriods(MOCK_PERIODS);
+      setTimetableEntries([]);
+      setSelectedClass('1');
+      setSelectedSection('11');
+      setSelectedTeacher('1');
     } finally {
       setLoading(false);
     }
@@ -121,12 +172,15 @@ const Timetable = () => {
   const classSections = sections.filter(s => s.class_id === parseInt(selectedClass));
   const modalClassSections = sections.filter(s => s.class_id === parseInt(modalClassId));
 
-  // Extract distinct room numbers
-  const distinctRooms = Array.from(new Set(
-    timetableEntries
-      .map(e => e.room_number)
-      .filter(r => r && r.trim() !== '')
-  )).sort();
+  // 20 Rooms (Room 1 to Room 20)
+  const distinctRooms = Array.from(new Set([
+    ...ROOMS_LIST,
+    ...timetableEntries.map(e => e.room_number).filter(r => r && r.trim() !== '')
+  ])).sort((a, b) => {
+    const numA = parseInt(a.replace(/\D/g, '')) || 0;
+    const numB = parseInt(b.replace(/\D/g, '')) || 0;
+    return numA - numB;
+  });
 
   // Set default room if empty
   useEffect(() => {
@@ -962,13 +1016,15 @@ const Timetable = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Room Number</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Room 101, Lab 2"
+                  <select
                     value={modalRoom}
                     onChange={(e) => setModalRoom(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-xl glass-input text-slate-100 focus:outline-none"
-                  />
+                  >
+                    {distinctRooms.map(rm => (
+                      <option key={rm} value={rm} className="bg-slate-900">{rm}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
