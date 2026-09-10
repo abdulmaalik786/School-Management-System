@@ -47,11 +47,20 @@ app.include_router(settings.router)
 @app.on_event("startup")
 def on_startup():
     try:
-        from app.database import engine, Base
+        from app.database import engine, Base, SessionLocal
+        from app.models.user import User
         from app.services.seed import seed_database
         Base.metadata.create_all(bind=engine)
-        seed_database()
-        print("Database initialized and seeded successfully.")
+        
+        db = SessionLocal()
+        user_count = db.query(User).count()
+        db.close()
+        
+        if user_count == 0:
+            seed_database()
+            print("Database initialized and seeded successfully.")
+        else:
+            print("Database already initialized.")
     except Exception as e:
         print(f"Startup DB init info: {e}")
 
