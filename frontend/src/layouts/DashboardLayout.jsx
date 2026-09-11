@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import AIChatWidget from '../components/AIChatWidget';
+
 import {
   LayoutDashboard,
   Users,
@@ -63,9 +65,10 @@ const allNavigationItems = [
 ];
 
 const DashboardLayout = () => {
-  const { user, logout, changePassword } = useAuth();
+  const { user, logout, changePassword, hasRole } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+
 
   // Notification Drawer
   const [showNotifDrawer, setShowNotifDrawer] = useState(false);
@@ -155,8 +158,9 @@ const DashboardLayout = () => {
 
   const userRole = user?.role || 'Super Admin';
   const visibleNavItems = allNavigationItems.filter(
-    item => item.roles.includes('All') || item.roles.includes(userRole)
+    item => hasRole(item.roles)
   );
+
 
   return (
     <div className="min-h-screen bg-slate-950 flex text-slate-200">
@@ -336,7 +340,11 @@ const DashboardLayout = () => {
         </main>
       </div>
 
+      {/* CHAT-STYLE ASSISTANT WIDGET */}
+      <AIChatWidget />
+
       {/* CHANGE PASSWORD MODAL */}
+
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="max-w-md w-full glass-card rounded-2xl p-6 shadow-2xl border border-slate-800 relative">
