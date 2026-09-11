@@ -5,7 +5,7 @@ from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse, ChangePasswordRequest
 from app.schemas.user import UserOut
 from app.utils.security import verify_password, get_password_hash, create_access_token
-from app.dependencies.auth import get_current_active_user
+from app.dependencies.auth import get_current_active_user, get_role_category
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -46,7 +46,8 @@ async def login(request: Request, db: Session = Depends(get_db)):
             detail="Account is disabled"
         )
 
-    access_token = create_access_token(data={"sub": str(user.id), "role": user.role.name})
+    role_category = get_role_category(user.role.name)
+    access_token = create_access_token(data={"sub": str(user.id), "role": user.role.name, "role_category": role_category})
 
     user_dict = {
         "id": user.id,
@@ -54,6 +55,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
         "username": user.username,
         "full_name": user.full_name,
         "role": user.role.name,
+        "role_category": role_category,
         "role_id": user.role_id
     }
 
@@ -66,29 +68,48 @@ async def login(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/me")
 def get_me(current_user: User = Depends(get_current_active_user)):
+    role_category = get_role_category(current_user.role.name)
     profile_data = None
-    if current_user.role.name == "Student" and current_user.student_profile:
+    
+    if current_user.admin_profile:
         profile_data = {
-            "admission_number": current_user.student_profile.admission_number,
-            "roll_number": current_user.student_profile.roll_number,
-            "emergency_contact": current_user.student_profile.emergency_contact
+            "type": "Admin",
+            "admin_code": current_user.admin_profile.admin_code,
+            "access_level": current_user.admin_profile.access_level,
+            "department_oversight": current_user.admin_profile.department_oversight,
+            "office_location": current_user.admin_profile.office_location
         }
-    elif current_user.role.name == "Teacher" and current_user.teacher_profile:
+    elif current_user.teacher_profile:
         profile_data = {
+            "type": "Teacher",
             "employee_id": current_user.teacher_profile.employee_id,
             "department": current_user.teacher_profile.department,
-            "designation": current_user.teacher_profile.designation
+            "designation": current_user.teacher_profile.designation,
+            "qualification": current_user.teacher_profile.qualification,
+            "salary": current_user.teacher_profile.salary
         }
-    elif current_user.role.name in ["Accountant", "Librarian"] and current_user.staff_profile:
+    elif current_user.student_profile:
         profile_data = {
+            "type": "Student",
+            "admission_number": current_user.student_profile.admission_number,
+            "roll_number": current_user.student_profile.roll_number,
+            "emergency_contact": current_user.student_profile.emergency_contact,
+            "class_id": current_user.student_profile.class_id,
+            "section_id": current_user.student_profile.section_id
+        }
+    elif current_user.parent_profile:
+        profile_data = {
+            "type": "Parent",
+            "occupation": current_user.parent_profile.occupation,
+            "relationship_type": current_user.parent_profile.relationship_type,
+            "address": current_user.parent_profile.address
+        }
+    elif current_user.staff_profile:
+        profile_data = {
+            "type": "Staff",
             "employee_id": current_user.staff_profile.employee_id,
             "department": current_user.staff_profile.department,
             "designation": current_user.staff_profile.designation
-        }
-    elif current_user.role.name == "Parent" and current_user.parent_profile:
-        profile_data = {
-            "occupation": current_user.parent_profile.occupation,
-            "relationship_type": current_user.parent_profile.relationship_type
         }
 
     return {
@@ -99,6 +120,7 @@ def get_me(current_user: User = Depends(get_current_active_user)):
         "phone": current_user.phone,
         "is_active": current_user.is_active,
         "role_id": current_user.role_id,
+        "role_category": role_category,
         "role": {
             "id": current_user.role.id,
             "name": current_user.role.name,
@@ -108,6 +130,7 @@ def get_me(current_user: User = Depends(get_current_active_user)):
         "created_at": current_user.created_at,
         "updated_at": current_user.updated_at
     }
+
 
 
 @router.post("/change-password")

@@ -1,7 +1,7 @@
 from app.database import Base
 from app.models.role import Role
 from app.models.user import User
-from app.models.profiles import Student, Parent, Teacher, Staff
+from app.models.profiles import Student, Parent, Teacher, Staff, AdminProfile
 from app.models.academic import AcademicYear, SchoolClass, Section, Subject
 from app.models.timetable import Period, TimetableEntry
 from app.models.attendance import StudentAttendance, TeacherAttendance
@@ -20,10 +20,12 @@ __all__ = [
     "Base",
     "Role",
     "User",
+    "AdminProfile",
     "Student",
     "Parent",
     "Teacher",
     "Staff",
+
     "AcademicYear",
     "SchoolClass",
     "Section",

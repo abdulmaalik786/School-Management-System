@@ -85,3 +85,19 @@ class Staff(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     user = relationship("User", back_populates="staff_profile")
+
+
+class AdminProfile(Base):
+    __tablename__ = "admin_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    admin_code = Column(String(50), unique=True, nullable=True, index=True)
+    access_level = Column(String(50), default="Full", nullable=False) # "Full", "Super", "Operational", "Academic"
+    department_oversight = Column(String(100), nullable=True)
+    office_location = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    user = relationship("User", back_populates="admin_profile")
+

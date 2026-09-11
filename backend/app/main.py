@@ -8,7 +8,7 @@ load_dotenv()
 from app.routers import (
     auth, users, students, teachers, parents, academic,
     timetable, attendance, examination, finance,
-    dashboard, assignments, library, transport, events_announcements, settings
+    dashboard, assignments, library, transport, events_announcements, settings, assistant
 )
 
 app = FastAPI(
@@ -43,6 +43,8 @@ app.include_router(library.router)
 app.include_router(transport.router)
 app.include_router(events_announcements.router)
 app.include_router(settings.router)
+app.include_router(assistant.router)
+
 
 @app.on_event("startup")
 def on_startup():

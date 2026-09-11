@@ -8,8 +8,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 from app.database import SessionLocal, engine, Base
 from app.models.role import Role
 from app.models.user import User
-from app.models.profiles import Student, Parent, Teacher, Staff
+from app.models.profiles import Student, Parent, Teacher, Staff, AdminProfile
 from app.models.academic import AcademicYear, SchoolClass, Section, Subject
+
 from app.utils.security import get_password_hash
 
 ROLES_DATA = [
@@ -182,7 +183,19 @@ def seed_database():
                 print(f"Updated user name: {user.username} -> {user.full_name}")
 
             # Profiles
-            if u_data["role_name"] == "Parent":
+            if u_data["role_name"] in ["Super Admin", "School Admin", "Principal"]:
+                if not user.admin_profile:
+                    admin_rec = AdminProfile(
+                        user_id=user.id,
+                        admin_code=f"ADM-00{user.id}",
+                        access_level="Full" if u_data["role_name"] == "Super Admin" else "Operational",
+                        department_oversight="Executive Board" if u_data["role_name"] == "Super Admin" else "School Operations",
+                        office_location="Main Administrative Block"
+                    )
+                    db.add(admin_rec)
+                    print(f"  -> Created Admin profile for {user.username}")
+
+            elif u_data["role_name"] == "Parent":
                 if not user.parent_profile:
                     parent_rec = Parent(
                         user_id=user.id,
@@ -266,6 +279,7 @@ def seed_database():
                     )
                     db.add(staff_rec)
                     print(f"  -> Created Staff profile (Librarian) for {user.username}")
+
 
         db.commit()
 

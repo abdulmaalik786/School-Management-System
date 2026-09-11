@@ -18,11 +18,13 @@ class UserOut(BaseModel):
     phone: Optional[str] = None
     is_active: bool
     role_id: int
+    role_category: Optional[str] = None
     role: RoleOut
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 class UserProfileOut(UserOut):
