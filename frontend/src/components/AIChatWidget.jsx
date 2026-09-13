@@ -132,7 +132,17 @@ const getAssistantResponse = (text, user) => {
   };
 };
 
-const AIChatWidget = () => {
+const PUBLIC_PROMPTS = [
+  { label: '🪑 Seat Vacancies', text: 'How many available seats are there per class?' },
+  { label: '💳 Fee Structures', text: 'What is the fee structure for different grades?' },
+  { label: '📄 Required Documents', text: 'What documents are required for admission?' },
+  { label: '🎂 Age Criteria', text: 'What is the age criteria per grade?' },
+  { label: '📅 Deadlines & Dates', text: 'What are the admission deadlines and calendar dates?' },
+  { label: '📝 Application Steps', text: 'What are the application process steps?' },
+  { label: '📍 Timings & Contact', text: 'What are the school timings, contact info, and location?' }
+];
+
+const AIChatWidget = ({ isPublic = false }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -141,14 +151,16 @@ const AIChatWidget = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const role = user?.role || 'User';
-  const quickPrompts = getQuickPrompts(role);
+  const role = isPublic ? 'Prospective Parent/Student' : (user?.role || 'User');
+  const quickPrompts = isPublic ? PUBLIC_PROMPTS : getQuickPrompts(role);
 
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'assistant',
-      text: `Welcome back, **${user?.full_name || user?.username || 'User'}**! I am your AI Assistant for EduPulse ERP. How can I help you today?`,
+      text: isPublic
+        ? `Welcome to **EduPulse Academy Admissions**! How can I assist you with admissions, campus facilities, or academic programs today?`
+        : `Welcome back, **${user?.full_name || user?.username || 'User'}**! I am your AI Assistant for EduPulse ERP. How can I help you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -178,8 +190,10 @@ const AIChatWidget = () => {
     if (!textToSend) setInput('');
     setIsTyping(true);
 
+    const endpoint = isPublic ? '/api/public/admission-assistant' : '/api/assistant/query';
+
     try {
-      const response = await API.post('/api/assistant/query', { message: queryText });
+      const response = await API.post(endpoint, { message: queryText }, { timeout: 10000 });
       const { response: botText, action } = response.data;
       const botMsg = {
         id: Date.now() + 1,
@@ -191,11 +205,22 @@ const AIChatWidget = () => {
       setMessages((prev) => [...prev, botMsg]);
     } catch (err) {
       console.error('Assistant query error:', err);
-      const fallbackResp = getAssistantResponse(queryText, user);
+      const fallbackResp = isPublic
+        ? {
+            text: "I'm currently unable to retrieve specific details for your query.\n\nPlease reach out to our Admissions Office:\n📞 Phone: +1 (800) 555-EDU1\n📧 Email: admissions@edupulse-school.edu\n\nOr click below to fill out our Request a Callback form!",
+            action: { label: "Request a Callback Form", path: "/admissions" }
+          }
+        : getAssistantResponse(queryText, user);
+      
+      const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+      const prefix = isTimeout 
+        ? "⚠️ *Network Timeout:* Taking longer than expected to connect.\n\n" 
+        : "";
+
       const botMsg = {
         id: Date.now() + 1,
         sender: 'assistant',
-        text: fallbackResp.text,
+        text: `${prefix}${fallbackResp.text}`,
         action: fallbackResp.action,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -226,11 +251,15 @@ const AIChatWidget = () => {
               </div>
               <div>
                 <h3 className="font-bold text-slate-100 text-xs flex items-center gap-1.5">
-                  EduPulse AI Assistant
+                  {isPublic ? 'EduPulse Admissions Bot' : 'EduPulse AI Assistant'}
                   <Sparkles size={13} className="text-amber-400 animate-pulse" />
                 </h3>
                 <p className="text-[10px] text-slate-400">
-                  Active for <span className="text-indigo-300 font-semibold">{user?.role || 'User'}</span>
+                  {isPublic ? (
+                    <span className="text-emerald-400 font-semibold">Public Admissions Desk</span>
+                  ) : (
+                    <>Active for <span className="text-indigo-300 font-semibold">{user?.role || 'User'}</span></>
+                  )}
                 </p>
               </div>
             </div>
@@ -297,9 +326,18 @@ const AIChatWidget = () => {
                 ))}
 
                 {isTyping && (
-                  <div className="flex items-center space-x-2 text-slate-400 text-xs pl-2">
-                    <Bot size={14} className="animate-spin text-indigo-400" />
-                    <span>EduPulse AI is thinking...</span>
+                  <div className="flex items-start gap-2 max-w-[85%] animate-pulse">
+                    <div className="w-7 h-7 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 flex items-center justify-center shrink-0 mb-1">
+                      <Bot size={14} className="animate-spin text-indigo-400" />
+                    </div>
+                    <div className="p-3 rounded-2xl text-xs bg-slate-900/90 border border-slate-800 text-slate-300 rounded-bl-none shadow-sm flex items-center space-x-2">
+                      <div className="flex space-x-1">
+                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
+                      </div>
+                      <span className="text-slate-400 text-[11px]">EduPulse AI is analyzing records...</span>
+                    </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -326,7 +364,7 @@ const AIChatWidget = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder={`Ask Assistant (${role})...`}
+                  placeholder={isPublic ? "Ask about admissions, fees, deadlines..." : `Ask Assistant (${role})...`}
                   className="flex-1 px-3 py-2 text-xs rounded-xl glass-input text-slate-100 placeholder-slate-500 focus:outline-none"
                 />
                 <button

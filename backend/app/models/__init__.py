@@ -13,7 +13,7 @@ from app.models.extended import (
     Vehicle, TransportRoute, RouteStop, StudentTransport,
     SchoolEvent,
     Announcement, Notification,
-    SchoolSetting
+    SchoolSetting, AssistantLog, AdmissionInfo, AdmissionInquiry
 )
 
 __all__ = [
@@ -51,5 +51,8 @@ __all__ = [
     "SchoolEvent",
     "Announcement",
     "Notification",
-    "SchoolSetting"
+    "SchoolSetting",
+    "AssistantLog",
+    "AdmissionInfo",
+    "AdmissionInquiry"
 ]

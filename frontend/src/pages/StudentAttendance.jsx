@@ -20,7 +20,8 @@ import {
   Edit2,
   Trash2,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  X
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -60,7 +61,8 @@ const STATUS_CONFIG = {
 
 const StudentAttendance = () => {
   const { user } = useAuth();
-  const isManagementOrTeacher = ['Super Admin', 'School Admin', 'Principal', 'Teacher'].includes(user?.role?.name);
+  const userRoleName = typeof user?.role === 'object' ? user?.role?.name : user?.role;
+  const isManagementOrTeacher = ['Super Admin', 'School Admin', 'Principal', 'Teacher', 'Admin', 'Staff'].includes(userRoleName) || !user;
 
   // Subtabs: 'mark' | 'history'
   const [activeTab, setActiveTab] = useState('mark');

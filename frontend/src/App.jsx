@@ -36,12 +36,15 @@ import Announcements from './pages/Announcements';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 
+import Admissions from './pages/Admissions';
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public Login Route */}
+          {/* Public Routes (Accessible WITHOUT Login) */}
+          <Route path="/admissions" element={<Admissions />} />
           <Route path="/login" element={<Login />} />
 
           {/* Protected Dashboard Routes */}

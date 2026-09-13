@@ -4,10 +4,11 @@ import API from '../services/api';
 const AuthContext = createContext(null);
 
 const getRoleCategory = (roleName) => {
-  if (['Super Admin', 'School Admin', 'Principal', 'Admin'].includes(roleName)) return 'Admin';
-  if (roleName === 'Teacher') return 'Teacher';
-  if (roleName === 'Student') return 'Student';
-  if (roleName === 'Parent') return 'Parent';
+  const name = typeof roleName === 'object' ? roleName?.name : roleName;
+  if (['Super Admin', 'School Admin', 'Principal', 'Admin'].includes(name)) return 'Admin';
+  if (name === 'Teacher') return 'Teacher';
+  if (name === 'Student') return 'Student';
+  if (name === 'Parent') return 'Parent';
   return 'Staff';
 };
 

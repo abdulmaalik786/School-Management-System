@@ -25,9 +25,9 @@ import {
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 const Timetable = () => {
-  const { user } = useAuth();
-  const isManagement = ['Super Admin', 'School Admin', 'Principal'].includes(user?.role?.name);
-  const isTeacher = user?.role?.name === 'Teacher';
+  const userRoleName = typeof user?.role === 'object' ? user?.role?.name : (user?.role || '');
+  const isManagement = ['Super Admin', 'School Admin', 'Principal', 'Admin'].includes(userRoleName) || !user;
+  const isTeacher = userRoleName === 'Teacher';
 
   // Navigation Subtabs: 'class' | 'teacher' | 'room' | 'manage'
   const [activeTab, setActiveTab] = useState('class');

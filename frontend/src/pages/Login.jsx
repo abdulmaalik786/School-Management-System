@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { School, Lock, User, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { School, Lock, User, AlertCircle, ArrowRight, ShieldCheck, Sun, Moon } from 'lucide-react';
 
 const DEMO_ACCOUNTS = [
   { role: 'Student', username: 'student', color: 'from-teal-500 to-emerald-600' },
@@ -17,6 +17,12 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem('app_theme') || 'dark');
+
+  const toggleTheme = (selectedTheme) => {
+    setTheme(selectedTheme);
+    localStorage.setItem('app_theme', selectedTheme);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,15 +54,64 @@ const Login = () => {
     }
   };
 
+  const isLight = theme === 'light';
+  const isMedium = theme === 'medium';
+
+  const getContainerBg = () => {
+    if (isLight) return 'bg-white text-slate-900';
+    if (isMedium) return 'medium-theme bg-slate-200 text-slate-800';
+    return 'bg-slate-950 text-slate-100';
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className={`min-h-screen ${getContainerBg()} flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-300`}>
+      {/* Theme Switcher Bar Top Right */}
+      <div className="absolute top-6 right-6 z-20 flex items-center p-1.5 bg-slate-900/60 backdrop-blur-xl rounded-full border border-slate-700/50 shadow-xl space-x-1">
+        <button
+          type="button"
+          onClick={() => toggleTheme('dark')}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            theme === 'dark'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Moon size={14} />
+          <span>Dark</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleTheme('medium')}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            theme === 'medium'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-extrabold'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Sun size={14} />
+          <span>Medium White</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleTheme('light')}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            theme === 'light'
+              ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 font-extrabold'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Sun size={14} />
+          <span>Pure White</span>
+        </button>
+      </div>
+
       {/* Dynamic Background Glow Orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+      <div className={`absolute top-1/4 left-1/4 w-96 h-96 ${isLight ? 'bg-indigo-400/20' : 'bg-indigo-600/20'} rounded-full blur-3xl pointer-events-none animate-pulse`}></div>
+      <div className={`absolute bottom-1/4 right-1/4 w-96 h-96 ${isLight ? 'bg-amber-400/20' : 'bg-purple-600/20'} rounded-full blur-3xl pointer-events-none animate-pulse`}></div>
 
       <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 z-10">
         {/* LEFT COLUMN: LOGIN FORM */}
-        <div className="lg:col-span-7 glass-card rounded-3xl p-8 sm:p-10 shadow-2xl border border-slate-800 flex flex-col justify-between">
+        <div className={`lg:col-span-7 ${isLight ? 'glass-card-light' : 'glass-card'} rounded-3xl p-8 sm:p-10 shadow-2xl border ${isLight ? 'border-slate-200' : 'border-slate-800'} flex flex-col justify-between`}>
           <div>
             {/* Header */}
             <div className="flex items-center space-x-3 mb-8">
@@ -64,16 +119,16 @@ const Login = () => {
                 <School size={28} />
               </div>
               <div>
-                <h1 className="text-xl font-extrabold text-slate-100 tracking-tight">
-                  School <span className="text-indigo-400">Management System</span>
+                <h1 className={`text-xl font-extrabold ${isLight ? 'text-slate-900' : 'text-slate-100'} tracking-tight`}>
+                  School <span className="text-indigo-600 dark:text-indigo-400">Management System</span>
                 </h1>
-                <p className="text-xs text-slate-400 font-medium">School Management System Portal</p>
+                <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'} font-medium`}>School Management System Portal</p>
               </div>
             </div>
 
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-slate-100">Quick Access Portal</h2>
-              <p className="text-xs text-slate-400 mt-1">Select a role module from the right to open directly or enter username below</p>
+              <h2 className={`text-xl font-bold ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>Quick Access Portal</h2>
+              <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'} mt-1`}>Select a role module from the right to open directly or enter username below</p>
             </div>
 
             {error && (
@@ -85,18 +140,18 @@ const Login = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+                <label className={`block text-xs font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'} mb-1.5 uppercase tracking-wider`}>
                   Username / Module Role
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                  <User className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} size={18} />
                   <input
                     type="text"
                     required
                     value={usernameOrEmail}
                     onChange={(e) => setUsernameOrEmail(e.target.value)}
                     placeholder="e.g. student, teacher, accountant, principal"
-                    className="w-full pl-10 pr-4 py-3 text-xs rounded-xl glass-input text-slate-100 placeholder-slate-500 focus:outline-none transition"
+                    className={`w-full pl-10 pr-4 py-3 text-xs rounded-xl ${isLight ? 'glass-input-light' : 'glass-input text-slate-100'} placeholder-slate-400 focus:outline-none transition`}
                   />
                 </div>
               </div>
@@ -118,22 +173,24 @@ const Login = () => {
             </form>
           </div>
 
-          <div className="pt-8 border-t border-slate-800/80 mt-6 text-center">
-            <p className="text-[11px] text-slate-500 font-medium">
-              Enterprise Direct Portal Access System
-            </p>
+          <div className={`pt-8 border-t ${isLight ? 'border-slate-200' : 'border-slate-800/80'} mt-6 flex items-center justify-between text-[11px] ${isLight ? 'text-slate-600' : 'text-slate-500'} font-medium`}>
+            <span>Enterprise Direct Portal Access System</span>
+            <Link to="/admissions" className="text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1">
+              <span>Public Admissions Portal</span>
+              <ArrowRight size={12} />
+            </Link>
           </div>
         </div>
 
         {/* RIGHT COLUMN: DIRECT MODULE ROLE SELECTOR */}
-        <div className="lg:col-span-5 glass-card rounded-3xl p-8 shadow-2xl border border-slate-800 flex flex-col justify-between">
+        <div className={`lg:col-span-5 ${isLight ? 'glass-card-light' : 'glass-card'} rounded-3xl p-8 shadow-2xl border ${isLight ? 'border-slate-200' : 'border-slate-800'} flex flex-col justify-between`}>
           <div>
-            <div className="flex items-center space-x-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
+            <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
               <ShieldCheck size={16} />
               <span>Direct One-Click Access</span>
             </div>
-            <h3 className="text-lg font-bold text-slate-100 mb-1">Select Module</h3>
-            <p className="text-xs text-slate-400 mb-6">
+            <h3 className={`text-lg font-bold ${isLight ? 'text-slate-900' : 'text-slate-100'} mb-1`}>Select Module</h3>
+            <p className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'} mb-6`}>
               Click any role card below to open its module directly without any password:
             </p>
 
@@ -143,12 +200,16 @@ const Login = () => {
                   key={acc.role}
                   type="button"
                   onClick={() => handleQuickFill(acc.username)}
-                  className="p-4 rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-900/40 hover:from-indigo-950/40 hover:to-purple-950/40 border border-slate-800 text-left transition-all group flex flex-col justify-between hover:border-indigo-500/50 shadow-lg hover:shadow-indigo-500/10 transform hover:-translate-y-0.5"
+                  className={`p-4 rounded-2xl ${
+                    isLight
+                      ? 'bg-slate-50 hover:bg-indigo-50/80 border-slate-200 hover:border-indigo-400 text-slate-800'
+                      : 'bg-gradient-to-br from-slate-900/80 to-slate-900/40 hover:from-indigo-950/40 hover:to-purple-950/40 border-slate-800 hover:border-indigo-500/50 text-slate-100'
+                  } border text-left transition-all group flex flex-col justify-between shadow-lg transform hover:-translate-y-0.5`}
                 >
-                  <span className="text-sm font-bold text-slate-100 group-hover:text-indigo-300 transition">
+                  <span className={`text-sm font-bold ${isLight ? 'text-slate-900 group-hover:text-indigo-600' : 'text-slate-100 group-hover:text-indigo-300'} transition`}>
                     {acc.role}
                   </span>
-                  <span className="text-[11px] text-indigo-400 font-semibold mt-2 flex items-center space-x-1">
+                  <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mt-2 flex items-center space-x-1">
                     <span>Open Module</span>
                     <ArrowRight size={12} />
                   </span>
@@ -157,8 +218,8 @@ const Login = () => {
             </div>
           </div>
 
-          <div className="mt-6 p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 text-[11px] text-slate-400">
-            <span className="font-bold text-slate-300">Direct Access:</span> No password required. Instant module redirect.
+          <div className={`mt-6 p-4 rounded-2xl ${isLight ? 'bg-slate-100 border-slate-200 text-slate-600' : 'bg-slate-900/40 border-slate-800/80 text-slate-400'} border text-[11px]`}>
+            <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>Direct Access:</span> No password required. Instant module redirect.
           </div>
         </div>
       </div>

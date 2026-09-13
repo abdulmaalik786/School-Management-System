@@ -19,7 +19,9 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role?.name)) {
+  const userRoleName = typeof user?.role === 'object' ? user?.role?.name : user?.role;
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userRoleName)) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
         <div className="max-w-md w-full glass-card rounded-2xl p-8 text-center shadow-2xl border border-red-500/20">

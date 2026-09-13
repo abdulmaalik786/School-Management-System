@@ -227,3 +227,51 @@ class SchoolSetting(Base):
     description = Column(Text, nullable=True)
     category = Column(String(50), default="General", nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+# --- AI ASSISTANT AUDIT LOGS ---
+
+class AssistantLog(Base):
+    __tablename__ = "assistant_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(50), nullable=False)
+    query = Column(Text, nullable=False)
+    response = Column(Text, nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    user = relationship("User")
+
+
+# --- PUBLIC ADMISSION INFO (ISOLATED FROM INTERNAL RECORDS) ---
+
+class AdmissionInfo(Base):
+    __tablename__ = "admission_info"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String(50), nullable=False, index=True)  # "Fee Structure", "Seat Availability", "Deadlines", "Documents", "Age Criteria", "Process", "Contact & FAQ"
+    grade_or_topic = Column(String(100), nullable=False, index=True) # e.g. "Grade 1", "Grade 5", "General Deadlines", "Required Documents"
+    details = Column(Text, nullable=False)
+    fee_amount = Column(Float, nullable=True)
+    available_seats = Column(Integer, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+# --- PUBLIC ADMISSION INQUIRIES (SEPARATE FROM INTERNAL ASSISTANT LOGS) ---
+
+class AdmissionInquiry(Base):
+    __tablename__ = "admission_inquiries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    visitor_name = Column(String(100), nullable=True)
+    contact_info = Column(String(150), nullable=True) # Phone or email if extracted / provided
+    query = Column(Text, nullable=False)
+    response = Column(Text, nullable=False)
+    status = Column(String(30), default="New Lead", nullable=False) # "New Lead", "Contacted", "Followed Up", "Closed"
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+
+

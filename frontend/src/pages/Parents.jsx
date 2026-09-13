@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 
 const Parents = () => {
-  const { user } = useAuth();
-  const isManagement = ['Super Admin', 'School Admin', 'Principal'].includes(user?.role?.name);
+  const userRoleName = typeof user?.role === 'object' ? user?.role?.name : (user?.role || '');
+  const isManagement = ['Super Admin', 'School Admin', 'Principal', 'Admin'].includes(userRoleName) || !user;
 
   const [parents, setParents] = useState([]);
   const [loading, setLoading] = useState(true);

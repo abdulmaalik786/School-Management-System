@@ -35,13 +35,15 @@ import {
   UserCheck,
   Megaphone,
   TrendingUp,
-  FolderOpen
+  FolderOpen,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const allNavigationItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['All'] },
   { name: 'Students', path: '/students', icon: Users, roles: ['Super Admin', 'School Admin', 'Principal', 'Teacher', 'Accountant'] },
-  { name: 'Teachers', path: '/teachers', icon: GraduationCap, roles: ['Super Admin', 'School Admin', 'Principal'] },
+  { name: 'Teachers', path: '/teachers', icon: GraduationCap, roles: ['Super Admin', 'School Admin', 'Principal', 'Teacher'] },
   { name: 'Parents', path: '/parents', icon: Heart, roles: ['Super Admin', 'School Admin', 'Principal'] },
   { name: 'Academic Years', path: '/academic-years', icon: Calendar, roles: ['Super Admin', 'School Admin', 'Principal'] },
   { name: 'Classes & Sections', path: '/classes', icon: BookOpen, roles: ['Super Admin', 'School Admin', 'Principal', 'Teacher'] },
@@ -162,8 +164,29 @@ const DashboardLayout = () => {
   );
 
 
+  const [theme, setTheme] = useState(localStorage.getItem('app_theme') || 'dark');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('app_theme') || 'dark';
+    setTheme(savedTheme);
+  }, []);
+
+  const toggleTheme = (newTheme) => {
+    setTheme(newTheme);
+    localStorage.setItem('app_theme', newTheme);
+  };
+
+  const isLight = theme === 'light';
+  const isMedium = theme === 'medium';
+
+  const getContainerTheme = () => {
+    if (isLight) return 'light-theme bg-slate-100 text-slate-900';
+    if (isMedium) return 'medium-theme bg-slate-200 text-slate-800';
+    return 'bg-slate-950 text-slate-200';
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 flex text-slate-200">
+    <div className={`min-h-screen ${getContainerTheme()} flex transition-colors duration-300`}>
       {/* SIDEBAR */}
       <aside
         className={`${
@@ -262,6 +285,40 @@ const DashboardLayout = () => {
 
           {/* Topbar Actions */}
           <div className="flex items-center space-x-3">
+            {/* 3-Theme Toggle Button */}
+            <div className="flex items-center p-1 bg-slate-900/60 rounded-xl border border-slate-800 space-x-1">
+              <button
+                type="button"
+                onClick={() => toggleTheme('dark')}
+                className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                  theme === 'dark' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Dark Mode"
+              >
+                <Moon size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleTheme('medium')}
+                className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                  theme === 'medium' ? 'bg-blue-600 text-white shadow-md font-extrabold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Medium White (Soft Slate)"
+              >
+                <Sun size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleTheme('light')}
+                className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                  theme === 'light' ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold' : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Pure White Mode"
+              >
+                <Sun size={15} />
+              </button>
+            </div>
+
             {/* Notification Button */}
             <button
               onClick={() => setShowNotifDrawer(!showNotifDrawer)}

@@ -325,8 +325,42 @@ def seed_database():
                 db.add(subj)
                 print(f"Created Subject: {subj.name} ({subj.code})")
 
+        # Seed Isolated Public Admission Info Records
+        from app.models.extended import AdmissionInfo
+        if db.query(AdmissionInfo).count() == 0:
+            public_records = [
+                # Seat Vacancies
+                AdmissionInfo(category="Seat Availability", grade_or_topic="Grade 1", available_seats=22, details="Grade 1 has 22 seats available out of 30 total capacity for Academic Year 2026-2027."),
+                AdmissionInfo(category="Seat Availability", grade_or_topic="Grade 2", available_seats=18, details="Grade 2 has 18 seats available out of 30 total capacity for Academic Year 2026-2027."),
+                AdmissionInfo(category="Seat Availability", grade_or_topic="Grade 3", available_seats=15, details="Grade 3 has 15 seats available out of 30 total capacity for Academic Year 2026-2027."),
+                AdmissionInfo(category="Seat Availability", grade_or_topic="Grade 5", available_seats=12, details="Grade 5 has 12 seats available out of 30 total capacity for Academic Year 2026-2027."),
+                
+                # Fee Structures
+                AdmissionInfo(category="Fee Structure", grade_or_topic="Grade 1 - 5", fee_amount=250.0, details="Primary Grades (Grade 1-5): Tuition Fee is $250.00 / month. Annual One-Time Admission Fee is $150.00."),
+                AdmissionInfo(category="Fee Structure", grade_or_topic="Grade 6 - 8", fee_amount=300.0, details="Middle School (Grade 6-8): Tuition Fee is $300.00 / month. Science & Lab Fee is $50.00 / term."),
+                AdmissionInfo(category="Fee Structure", grade_or_topic="Grade 9 - 12", fee_amount=350.0, details="High School (Grade 9-12): Tuition Fee is $350.00 / month. Computer & STEM Lab Fee is $75.00 / term."),
+
+                # Required Documents
+                AdmissionInfo(category="Documents", grade_or_topic="Required Documents", details="1. Original & Copy of Birth Certificate\n2. Previous 2 years School Transcripts/Report Cards\n3. School Transfer Certificate (TC)\n4. 4 Passport-sized Photographs\n5. Parent/Guardian ID Proof\n6. Immunization & Health Record"),
+
+                # Age Criteria
+                AdmissionInfo(category="Age Criteria", grade_or_topic="Age Criteria", details="• Grade 1: 5.5 to 6.5 years as of Sept 1\n• Grade 2: 6.5 to 7.5 years\n• Grade 3: 7.5 to 8.5 years\n• Grade 5: 9.5 to 10.5 years\n• Grade 9+: 13.5+ years"),
+
+                # Deadlines
+                AdmissionInfo(category="Deadlines", grade_or_topic="General Deadlines", details="• Online Application Deadline: August 15, 2026\n• Placement Assessment: July 10 & August 5, 2026\n• Academic Term 1 Begins: September 1, 2026"),
+
+                # Application Steps
+                AdmissionInfo(category="Process", grade_or_topic="Application Steps", details="Step 1: Fill out Online Inquiry Form\nStep 2: Submit Required Documents\nStep 3: Placement Assessment & Parent Interaction\nStep 4: Receive Acceptance Letter & Pay Seat Deposit"),
+
+                # Contact & FAQ
+                AdmissionInfo(category="Contact & FAQ", grade_or_topic="Campus Info", details="• Address: 100 EduPulse Campus Way, Knowledge City\n• Hours: Mon-Fri 8:00 AM - 3:00 PM\n• Phone: +1 (800) 555-EDU1\n• Email: admissions@edupulse-school.edu")
+            ]
+            for pr in public_records:
+                db.add(pr)
+            print("Seeded public admission_info table successfully!")
+
         db.commit()
-        print("Database seeding for Chunk 2 completed successfully!")
+        print("Database seeding completed successfully!")
     except Exception as e:
         db.rollback()
         print(f"Error seeding database: {e}")

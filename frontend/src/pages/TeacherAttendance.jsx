@@ -55,8 +55,8 @@ const STATUS_CONFIG = {
 };
 
 const TeacherAttendance = () => {
-  const { user } = useAuth();
-  const isManagement = ['Super Admin', 'School Admin', 'Principal'].includes(user?.role?.name);
+  const userRoleName = typeof user?.role === 'object' ? user?.role?.name : (user?.role || '');
+  const isManagement = ['Super Admin', 'School Admin', 'Principal', 'Admin'].includes(userRoleName) || !user;
 
   // Subtabs: 'mark' | 'daily' | 'monthly' | 'individual'
   const [activeTab, setActiveTab] = useState(isManagement ? 'mark' : 'individual');

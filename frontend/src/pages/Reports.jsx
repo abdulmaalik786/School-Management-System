@@ -34,6 +34,8 @@ const Reports = () => {
   const [books, setBooks] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [allocations, setAllocations] = useState([]);
+  const [assistantLogs, setAssistantLogs] = useState([]);
+  const [admissionInquiries, setAdmissionInquiries] = useState([]);
 
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
@@ -45,7 +47,7 @@ const Reports = () => {
   const fetchAllReportData = async () => {
     setLoading(true);
     try {
-      const [sRes, tRes, cRes, eRes, iRes, pRes, bRes, rRes, aRes] = await Promise.all([
+      const requests = [
         API.get('/api/students'),
         API.get('/api/teachers'),
         API.get('/api/classes'),
@@ -54,18 +56,32 @@ const Reports = () => {
         API.get('/api/finance/payments'),
         API.get('/api/library/books'),
         API.get('/api/transport/routes'),
-        API.get('/api/transport/allocations')
-      ]);
+        API.get('/api/transport/allocations'),
+        API.get('/api/public/inquiries')
+      ];
 
-      setStudents(sRes.data);
-      setTeachers(tRes.data);
-      setClasses(cRes.data);
-      setExams(eRes.data);
-      setInvoices(iRes.data);
-      setPayments(pRes.data);
-      setBooks(bRes.data);
-      setRoutes(rRes.data);
-      setAllocations(aRes.data);
+      if (['Principal', 'Super Admin', 'School Admin'].includes(user?.role)) {
+        requests.push(API.get('/api/assistant/logs'));
+      }
+
+      const results = await Promise.all(requests);
+
+      setStudents(results[0].data);
+      setTeachers(results[1].data);
+      setClasses(results[2].data);
+      setExams(results[3].data);
+      setInvoices(results[4].data);
+      setPayments(results[5].data);
+      setBooks(results[6].data);
+      setRoutes(results[7].data);
+      setAllocations(results[8].data);
+
+      if (results[9]) {
+        setAdmissionInquiries(results[9].data);
+      }
+      if (results[10]) {
+        setAssistantLogs(results[10].data);
+      }
     } catch (e) {
       console.error('Error fetching reports data:', e);
     } finally {
@@ -240,6 +256,30 @@ const Reports = () => {
         >
           <Bus className="w-3.5 h-3.5" /> Transport Allocations ({allocations.length})
         </button>
+        {['Principal', 'Super Admin', 'School Admin', 'Teacher', 'Accountant'].includes(user?.role) && (
+          <button
+            onClick={() => setActiveReport('admission_inquiries')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeReport === 'admission_inquiries'
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                : 'bg-slate-900/40 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-emerald-400" /> Public Admission Leads ({admissionInquiries.length})
+          </button>
+        )}
+        {['Principal', 'Super Admin', 'School Admin'].includes(user?.role) && (
+          <button
+            onClick={() => setActiveReport('assistant_logs')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeReport === 'assistant_logs'
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                : 'bg-slate-900/40 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" /> AI Assistant Audit Logs ({assistantLogs.length})
+          </button>
+        )}
       </div>
 
       {/* Filter and Search Bar */}
@@ -439,6 +479,92 @@ const Reports = () => {
                         <td className="py-3 px-4 font-mono text-white">{a.vehicle_number || '-'}</td>
                         <td className="py-3 px-4 text-slate-300">{a.driver_name}</td>
                         <td className="py-3 px-4 text-emerald-400">{a.driver_phone}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* 6. AI ASSISTANT AUDIT LOGS (PRINCIPAL AUDIT) */}
+            {activeReport === 'assistant_logs' && (
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 uppercase font-semibold">
+                    <th className="py-3 px-4">Timestamp</th>
+                    <th className="py-3 px-4">User</th>
+                    <th className="py-3 px-4">Role</th>
+                    <th className="py-3 px-4">User Query</th>
+                    <th className="py-3 px-4">Assistant Response</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {assistantLogs
+                    .filter(l =>
+                      (l.user_name || '').toLowerCase().includes(search.toLowerCase()) ||
+                      (l.query || '').toLowerCase().includes(search.toLowerCase()) ||
+                      (l.role || '').toLowerCase().includes(search.toLowerCase())
+                    )
+                    .map((l) => (
+                      <tr key={l.id} className="hover:bg-slate-800/30">
+                        <td className="py-3 px-4 font-mono text-slate-400 whitespace-nowrap">
+                          {l.timestamp ? new Date(l.timestamp).toLocaleString() : '-'}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-white">{l.user_name}</td>
+                        <td className="py-3 px-4">
+                          <span className="px-2 py-0.5 rounded font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            {l.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-200 max-w-xs truncate" title={l.query}>
+                          {l.query}
+                        </td>
+                        <td className="py-3 px-4 text-slate-300 max-w-sm" title={l.response}>
+                          <p className="line-clamp-2">{l.response}</p>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* 7. PUBLIC ADMISSION INQUIRIES LEADS */}
+            {activeReport === 'admission_inquiries' && (
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 uppercase font-semibold">
+                    <th className="py-3 px-4">Timestamp</th>
+                    <th className="py-3 px-4">Visitor / Contact Info</th>
+                    <th className="py-3 px-4">Visitor Query</th>
+                    <th className="py-3 px-4">AI Chatbot Response</th>
+                    <th className="py-3 px-4 text-center">Lead Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {admissionInquiries
+                    .filter(inq =>
+                      (inq.contact_info || '').toLowerCase().includes(search.toLowerCase()) ||
+                      (inq.query || '').toLowerCase().includes(search.toLowerCase())
+                    )
+                    .map((inq) => (
+                      <tr key={inq.id} className="hover:bg-slate-800/30">
+                        <td className="py-3 px-4 font-mono text-slate-400 whitespace-nowrap">
+                          {inq.timestamp ? new Date(inq.timestamp).toLocaleString() : '-'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-bold text-white block">{inq.visitor_name}</span>
+                          <span className="text-[11px] font-mono text-emerald-400">{inq.contact_info}</span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-200 max-w-xs truncate" title={inq.query}>
+                          {inq.query}
+                        </td>
+                        <td className="py-3 px-4 text-slate-300 max-w-sm" title={inq.response}>
+                          <p className="line-clamp-2">{inq.response}</p>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            {inq.status}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                 </tbody>
