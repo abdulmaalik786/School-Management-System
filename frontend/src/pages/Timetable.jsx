@@ -268,13 +268,13 @@ const MOCK_ENTRIES = MOCK_CLASSES.flatMap(cls => {
       const existingKeys = new Set(dbEntriesMapped.map(e => `${e.class_id}_${e.section_id}_${e.day_of_week.toLowerCase()}_${e.period_id}`));
       const filteredMocks = formattedMockEntries.filter(m => !existingKeys.has(`${m.class_id}_${m.section_id}_${m.day_of_week.toLowerCase()}_${m.period_id}`));
 
-      const loadedEntries = [...dbEntriesMapped, ...filteredMocks];
+      const combinedEntries = [...dbEntriesMapped, ...filteredMocks];
 
       // Specifically patch Period 7 for Class 9 & Class 10 if backend has empty entries for period 7
       const p7Obj = loadedPeriods.find(p => p.name === 'Period 7' || p.id === 7 || p.id === 8);
       const targetP7Id = p7Obj ? p7Obj.id : 7;
 
-      const finalEntries = loadedEntries.map(entry => {
+      const finalEntries = combinedEntries.map(entry => {
         if (entry.period_id === targetP7Id || entry.period_id === 7 || entry.period_id === 8) {
           if (parseInt(entry.class_id) === 9) {
             return { ...entry, subject_name: 'Islamiyat Compulsory' };
