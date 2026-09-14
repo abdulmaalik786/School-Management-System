@@ -25,9 +25,11 @@ import {
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 const Timetable = () => {
+  const { user } = useAuth();
   const userRoleName = typeof user?.role === 'object' ? user?.role?.name : (user?.role || '');
   const isManagement = ['Super Admin', 'School Admin', 'Principal', 'Admin'].includes(userRoleName) || !user;
   const isTeacher = userRoleName === 'Teacher';
+  const isStudent = userRoleName === 'Student';
 
   // Navigation Subtabs: 'class' | 'teacher' | 'room' | 'manage'
   const [activeTab, setActiveTab] = useState('class');
@@ -106,6 +108,79 @@ const MOCK_TEACHERS = [
   { id: 3, user: { full_name: 'Ms. Ayesha Khan' }, department: 'English' }
 ];
 
+// Subject mappings per Class range
+const CLASS_SUBJECTS_MAP = {
+  // Primary (Class 1-5)
+  primary: [
+    { subject_name: 'English Language', code: 'ENG' },
+    { subject_name: 'Urdu', code: 'URD' },
+    { subject_name: 'Mathematics', code: 'MTH' },
+    { subject_name: 'General Knowledge / Science', code: 'GKN' },
+    { subject_name: 'Islamiat', code: 'ISL' }
+  ],
+  // Middle (Class 6-8)
+  middle: [
+    { subject_name: 'Mathematics', code: 'MTH' },
+    { subject_name: 'General Science', code: 'GSC' },
+    { subject_name: 'English', code: 'ENG' },
+    { subject_name: 'Urdu', code: 'URD' },
+    { subject_name: 'Islamiyat', code: 'ISL' },
+    { subject_name: 'History & Geography', code: 'SST' },
+    { subject_name: 'Computer Studies', code: 'CMP' }
+  ],
+  // Secondary / Matric (Class 9-10)
+  matric: [
+    { subject_name: 'Mathematics (Science Group)', code: 'MTH' },
+    { subject_name: 'Physics', code: 'PHY' },
+    { subject_name: 'Chemistry', code: 'CHM' },
+    { subject_name: 'Biology / Computer Science', code: 'BIO' },
+    { subject_name: 'English Compulsory', code: 'ENG' },
+    { subject_name: 'Urdu Compulsory', code: 'URD' },
+    { subject_name: 'Islamiyat Compulsory', code: 'ISL' },
+    { subject_name: 'Pakistan Studies', code: 'PST' }
+  ]
+};
+
+const getSubjectsForClass = (classId) => {
+  if (classId <= 5) return CLASS_SUBJECTS_MAP.primary;
+  if (classId <= 8) return CLASS_SUBJECTS_MAP.middle;
+  return CLASS_SUBJECTS_MAP.matric;
+};
+
+// Generate Full Timetable for Class 1 to Class 10 (Sections A & B) with real Class 1-10 Subjects
+const MOCK_ENTRIES = MOCK_CLASSES.flatMap(cls => {
+  const classSecs = [cls.id * 10 + 1, cls.id * 10 + 2]; // Section A and B IDs
+  const classSubjs = getSubjectsForClass(cls.id);
+  const teacherList = ['Syeda Fatima Zahra', 'Mr. Tariq Mahmood', 'Ms. Ayesha Khan'];
+
+  return classSecs.flatMap(secId => {
+    const secName = secId % 2 === 1 ? 'A' : 'B';
+    return DAYS_OF_WEEK.flatMap(day => {
+      // Map 6 periods to class subjects
+      const dayPeriods = [1, 2, 3, 4, 6, 7];
+      return dayPeriods.map((periodId, idx) => {
+        const subj = classSubjs[idx % classSubjs.length];
+        const teacherName = teacherList[idx % teacherList.length];
+        return {
+          id: `c${cls.id}_s${secId}_p${periodId}_${day}`,
+          academic_year_id: 1,
+          class_id: cls.id,
+          section_id: secId,
+          subject_id: idx + 1,
+          teacher_id: (idx % 3) + 1,
+          period_id: periodId,
+          day_of_week: day,
+          room_number: `Room ${cls.id}01`,
+          class_name: cls.name,
+          section_name: secName,
+          subject_name: subj.subject_name,
+          teacher_name: teacherName
+        };
+      });
+    });
+  });
+});
+
   // Load all master dependencies & entries
   const fetchAllData = async () => {
     setLoading(true);
@@ -126,14 +201,92 @@ const MOCK_TEACHERS = [
       const loadedSections = secRes.data && secRes.data.length > 0 ? secRes.data : MOCK_SECTIONS;
       const loadedSubjects = subjRes.data && subjRes.data.length > 0 ? subjRes.data : MOCK_SUBJECTS;
       const loadedTeachers = tchRes.data && tchRes.data.length > 0 ? tchRes.data : MOCK_TEACHERS;
-
+      
       setAcademicYears(ayRes.data && ayRes.data.length > 0 ? ayRes.data : [{ id: 1, name: '2026-2027', is_active: true }]);
       setClasses(loadedClasses);
       setSections(loadedSections);
       setSubjects(loadedSubjects);
       setTeachers(loadedTeachers);
       setPeriods(loadedPeriods);
-      setTimetableEntries(ttRes.data || []);
+
+      // Dynamically attach entries to match actual section IDs with shuffled timetable for Section A vs Section B
+      const formattedMockEntries = MOCK_CLASSES.flatMap(cls => {
+        const clsSections = loadedSections.filter(s => s.class_id === cls.id);
+        const targetSecs = clsSections.length > 0 ? clsSections : [{ id: cls.id * 10 + 1, name: 'A' }, { id: cls.id * 10 + 2, name: 'B' }];
+        const classSubjs = getSubjectsForClass(cls.id);
+        const teacherList = ['Syeda Fatima Zahra', 'Mr. Tariq Mahmood', 'Ms. Ayesha Khan'];
+
+        return targetSecs.flatMap((sec, secIdx) => {
+          return DAYS_OF_WEEK.flatMap((day, dayIdx) => {
+            const dayPeriods = [1, 2, 3, 4, 6, 7, 8];
+            
+            // For Section 2 (or Section B) and different days, offset/shuffle subject & teacher order
+            const offset = (secIdx * 2) + dayIdx;
+
+            return dayPeriods.map((periodId, idx) => {
+              let subj = classSubjs[(idx + offset) % classSubjs.length];
+              
+              // Custom requirement: Period 7 (Period ID 8: 01:10 PM - 01:55 PM, or ID 7) override for Class 9 & Class 10
+              if (periodId === 8 || periodId === 7) {
+                if (cls.id === 9) {
+                  subj = { subject_name: 'Islamiyat Compulsory', code: 'ISL' };
+                } else if (cls.id === 10) {
+                  subj = { subject_name: 'Pakistan Studies', code: 'PST' };
+                }
+              }
+
+              const teacherName = teacherList[(idx + secIdx) % teacherList.length];
+              
+              return {
+                id: `c${cls.id}_s${sec.id}_p${periodId}_${day}`,
+                academic_year_id: 1,
+                class_id: cls.id,
+                section_id: sec.id,
+                subject_id: idx + 1,
+                teacher_id: ((idx + secIdx) % 3) + 1,
+                period_id: periodId,
+                day_of_week: day,
+                room_number: `Room ${cls.id}0${secIdx + 1}`,
+                class_name: cls.name,
+                section_name: sec.name,
+                subject_name: subj.subject_name,
+                teacher_name: teacherName
+              };
+            });
+          });
+        });
+      });
+
+      const dbEntries = ttRes.data || [];
+      const dbEntriesMapped = dbEntries.map(e => ({
+        ...e,
+        subject_name: e.subject_name || e.subject?.name,
+        teacher_name: e.teacher_name || e.teacher?.user?.full_name
+      }));
+
+      // Combine DB entries with generated entries, preferring DB entries for exact slots
+      const existingKeys = new Set(dbEntriesMapped.map(e => `${e.class_id}_${e.section_id}_${e.day_of_week.toLowerCase()}_${e.period_id}`));
+      const filteredMocks = formattedMockEntries.filter(m => !existingKeys.has(`${m.class_id}_${m.section_id}_${m.day_of_week.toLowerCase()}_${m.period_id}`));
+
+      const loadedEntries = [...dbEntriesMapped, ...filteredMocks];
+
+      // Specifically patch Period 7 for Class 9 & Class 10 if backend has empty entries for period 7
+      const p7Obj = loadedPeriods.find(p => p.name === 'Period 7' || p.id === 7 || p.id === 8);
+      const targetP7Id = p7Obj ? p7Obj.id : 7;
+
+      const finalEntries = loadedEntries.map(entry => {
+        if (entry.period_id === targetP7Id || entry.period_id === 7 || entry.period_id === 8) {
+          if (parseInt(entry.class_id) === 9) {
+            return { ...entry, subject_name: 'Islamiyat Compulsory' };
+          }
+          if (parseInt(entry.class_id) === 10) {
+            return { ...entry, subject_name: 'Pakistan Studies' };
+          }
+        }
+        return entry;
+      });
+
+      setTimetableEntries(finalEntries);
 
       // Default selections
       if (loadedClasses.length > 0) {
@@ -155,7 +308,7 @@ const MOCK_TEACHERS = [
       setSubjects(MOCK_SUBJECTS);
       setTeachers(MOCK_TEACHERS);
       setPeriods(MOCK_PERIODS);
-      setTimetableEntries([]);
+      setTimetableEntries(MOCK_ENTRIES);
       setSelectedClass('1');
       setSelectedSection('11');
       setSelectedTeacher('1');
@@ -171,6 +324,16 @@ const MOCK_TEACHERS = [
   // Filtered sections based on selected class
   const classSections = sections.filter(s => s.class_id === parseInt(selectedClass));
   const modalClassSections = sections.filter(s => s.class_id === parseInt(modalClassId));
+
+  // Auto select first section when selectedClass changes
+  useEffect(() => {
+    if (classSections.length > 0) {
+      const isCurrentSecValid = classSections.some(s => s.id.toString() === selectedSection);
+      if (!isCurrentSecValid) {
+        setSelectedSection(classSections[0].id.toString());
+      }
+    }
+  }, [selectedClass, sections]);
 
   // 20 Rooms (Room 1 to Room 20)
   const distinctRooms = Array.from(new Set([
@@ -291,6 +454,54 @@ const MOCK_TEACHERS = [
 
   // Class Timetable Grid Helper
   const getClassEntryForSlot = (day, periodId) => {
+    const periodObj = periods.find(p => p.id === periodId);
+    const pIndex = periods.findIndex(p => p.id === periodId);
+
+    // Period 6 Check (by name 'Period 6', or periodId 7, or pIndex 6)
+    const isPeriod6 =
+      (periodObj && (periodObj.name === 'Period 6' || periodObj.name.includes('12:25'))) ||
+      periodId === 7 ||
+      pIndex === periods.length - 2;
+
+    if (isPeriod6) {
+      if (parseInt(selectedClass) === 9 || parseInt(selectedClass) === 10) {
+        return {
+          id: `c${selectedClass}_p6_${day}_${periodId}`,
+          subject_name: 'Urdu Compulsory',
+          subject_code: `URD-${selectedClass}`,
+          teacher_name: 'Ms. Ayesha Khan',
+          room_number: `Room ${selectedClass}01`
+        };
+      }
+    }
+
+    // Period 7 Check (by name 'Period 7', or periodId 8, or pIndex 7)
+    const isPeriod7 =
+      (periodObj && (periodObj.name === 'Period 7' || periodObj.name.includes('01:10'))) ||
+      periodId === 8 ||
+      pIndex === periods.length - 1;
+
+    if (isPeriod7) {
+      if (parseInt(selectedClass) === 9) {
+        return {
+          id: `c9_p7_${day}_${periodId}`,
+          subject_name: 'Islamiyat Compulsory',
+          subject_code: 'ISL-09',
+          teacher_name: 'Syeda Fatima Zahra',
+          room_number: `Room 901`
+        };
+      }
+      if (parseInt(selectedClass) === 10) {
+        return {
+          id: `c10_p7_${day}_${periodId}`,
+          subject_name: 'Pakistan Studies',
+          subject_code: 'PST-10',
+          teacher_name: 'Mr. Tariq Mahmood',
+          room_number: `Room 1001`
+        };
+      }
+    }
+
     return timetableEntries.find(
       e =>
         e.day_of_week.toLowerCase() === day.toLowerCase() &&

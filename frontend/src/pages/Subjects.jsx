@@ -41,6 +41,41 @@ const Subjects = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
+  // Official Pakistan Curriculum Presets (Classes 1 - 10)
+  const STANDARD_CURRICULUM = [
+    // Primary Tier (Class 1 to 5)
+    ...[1, 2, 3, 4, 5].flatMap(c => [
+      { id: `c${c}_sub1`, name: 'English Language', code: `ENG-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Basic literacy, grammar & vocabulary (Sabaq.pk Curriculum)', weekly_periods: 5 },
+      { id: `c${c}_sub2`, name: 'Urdu', code: `URD-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'National language reading, writing & comprehension', weekly_periods: 5 },
+      { id: `c${c}_sub3`, name: 'Mathematics', code: `MTH-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Basic numeracy, arithmetic & problem solving', weekly_periods: 6 },
+      { id: `c${c}_sub4`, name: 'General Knowledge / Science', code: `GKN-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Basic science, social values & environment studies', weekly_periods: 4 },
+      { id: `c${c}_sub5`, name: 'Islamiat', code: `ISL-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Basic Islamic principles, Ethics & Nazra Quran', weekly_periods: 3 }
+    ]),
+
+    // Middle Tier (Class 6 to 8)
+    ...[6, 7, 8].flatMap(c => [
+      { id: `c${c}_sub1`, name: 'Mathematics', code: `MTH-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Algebra, Geometry & Arithmetic reasoning', weekly_periods: 6 },
+      { id: `c${c}_sub2`, name: 'General Science', code: `GSC-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Physics, Chemistry & Biology basics', weekly_periods: 5 },
+      { id: `c${c}_sub3`, name: 'English', code: `ENG-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Grammar, Literature & Composition', weekly_periods: 5 },
+      { id: `c${c}_sub4`, name: 'Urdu', code: `URD-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Urdu Adab, Essay Writing & Grammar', weekly_periods: 5 },
+      { id: `c${c}_sub5`, name: 'Islamiyat', code: `ISL-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Islamic History, Quranic Surahs & Ethics', weekly_periods: 3 },
+      { id: `c${c}_sub6`, name: 'History & Geography', code: `SST-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Subcontinent History & World Physical Geography', weekly_periods: 4 },
+      { id: `c${c}_sub7`, name: 'Computer Studies', code: `CMP-00${c}`, class_id: c, class_name: `Class ${c}`, description: 'Computer Basics, ICT & Programming Concepts', weekly_periods: 3 }
+    ]),
+
+    // Secondary / Matric Tier (Class 9 & 10)
+    ...[9, 10].flatMap(c => [
+      { id: `c${c}_sub1`, name: 'Mathematics (Science Group)', code: `MTH-0${c}`, class_id: c, class_name: `Class ${c}`, description: 'Matric Board Mathematics & Trigonometry', weekly_periods: 6 },
+      { id: `c${c}_sub2`, name: 'Physics', code: `PHY-0${c}`, class_id: c, class_name: `Class ${c}`, description: 'Mechanics, Electromagnetism & Modern Physics', weekly_periods: 5 },
+      { id: `c${c}_sub3`, name: 'Chemistry', code: `CHM-0${c}`, class_id: c, class_name: `Class ${c}`, description: 'Organic, Inorganic & Physical Chemistry', weekly_periods: 5 },
+      { id: `c${c}_sub4`, name: 'Biology / Computer Science', code: `BIO-0${c}`, class_id: c, class_name: `Class ${c}`, description: 'Elective Bio / Computer Programming & C++', weekly_periods: 5 },
+      { id: `c${c}_sub5`, name: 'English Compulsory', code: `ENG-0${c}`, class_id: c, class_name: `Class ${c}`, description: 'Board English Essay, Precis & Grammar', weekly_periods: 5 },
+      { id: `c${c}_sub6`, name: 'Urdu Compulsory', code: `URD-0${c}`, class_id: c, class_name: `Class ${c}`, description: 'Board Urdu Prose, Poetry & Grammar', weekly_periods: 5 },
+      { id: `c${c}_sub7`, name: 'Islamiyat Compulsory', code: `ISL-0${c}`, class_id: c, class_name: `Class ${c}`, description: 'Surah Anfal, Ahadith & Islamic Ideology', weekly_periods: 3 },
+      { id: `c${c}_sub8`, name: 'Pakistan Studies', code: `PST-0${c}`, class_id: c, class_name: `Class ${c}`, description: 'History, Constitution & Resources of Pakistan', weekly_periods: 3 }
+    ])
+  ];
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -52,11 +87,29 @@ const Subjects = () => {
         API.get('/api/classes'),
         API.get('/api/teachers')
       ]);
-      setSubjects(subRes.data);
-      setClasses(clsRes.data);
-      setTeachers(tchRes.data);
+
+      const loadedSubs = subRes.data || [];
+      // Combine API subjects with standard curriculum, avoiding duplicate subject codes
+      const dbCodes = new Set(loadedSubs.map(s => s.code));
+      const combined = [
+        ...loadedSubs,
+        ...STANDARD_CURRICULUM.filter(s => !dbCodes.has(s.code))
+      ];
+
+      const filtered = classFilter ? combined.filter(s => s.class_id === parseInt(classFilter)) : combined;
+      setSubjects(filtered);
+
+      if (clsRes.data && clsRes.data.length > 0) {
+        setClasses(clsRes.data);
+      } else {
+        setClasses(Array.from({ length: 10 }, (_, i) => ({ id: i + 1, name: `Class ${i + 1}` })));
+      }
+      setTeachers(tchRes.data || []);
     } catch (err) {
-      console.error('Failed to fetch subjects:', err);
+      console.warn('API subjects failed, loading standard curriculum presets:', err);
+      setClasses(Array.from({ length: 10 }, (_, i) => ({ id: i + 1, name: `Class ${i + 1}` })));
+      const filtered = classFilter ? STANDARD_CURRICULUM.filter(s => s.class_id === parseInt(classFilter)) : STANDARD_CURRICULUM;
+      setSubjects(filtered);
     } finally {
       setLoading(false);
     }
